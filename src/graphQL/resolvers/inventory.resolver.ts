@@ -8,7 +8,7 @@ export class InventoryResolver {
     async getInventoryLevelByInventoryId(
         @Arg('inventoryId') inventoryId: string
     ): Promise<number> {
-        const inventory: InventoryDocument = await InventoryModel.findOne({ _id: inventoryId }, { projection: { available: 1 } })
+        const inventory: InventoryDocument = await InventoryModel.findOne({ _id: inventoryId }, { available: 1 })
         if (!inventory) {
             throw new Error('Unable to get inventory by inventoryId!')
         }

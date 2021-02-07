@@ -12,7 +12,9 @@ import { createRefreshToken, createAccessToken } from "./utils/auth";
 import { sendRefreshToken } from "./utils/sendRefreshToken";
 import { UserResolver } from "./graphQL/resolvers/userResolver";
 import { ItemResolver } from "./graphQL/resolvers/item.resolver";
-import { TestResolver } from "./graphQL/resolvers/testResolver";
+import { InventoryResolver } from "./graphQL/resolvers/inventory.resolver";
+import { CartResolver } from "./graphQL/resolvers/cart.resolver";
+// import { TestResolver } from "./graphQL/resolvers/testResolver";
 const PORT: number = 5555;
 const db: string = "mongodb://127.0.0.1:27017/server";
 
@@ -60,7 +62,7 @@ const db: string = "mongodb://127.0.0.1:27017/server";
         mongoose.connect(db, { useNewUrlParser: true }).then(async () => {
             const apolloServer = new ApolloServer({
                 schema: await buildSchema({
-                    resolvers: [UserResolver, ItemResolver, TestResolver]
+                    resolvers: [UserResolver, InventoryResolver, CartResolver, ItemResolver]
                 }),
                 context: ({ req, res }) => ({ req, res })
             })

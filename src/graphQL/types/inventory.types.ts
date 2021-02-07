@@ -1,8 +1,8 @@
 import { Min } from "class-validator";
 import { ObjectType, Field, Int, InputType } from "type-graphql";
 
-@ObjectType()
-@InputType()
+@ObjectType('inentory')
+@InputType('inventoryInput')
 export class Inventory {
     @Field(() => Int)
     available: number;

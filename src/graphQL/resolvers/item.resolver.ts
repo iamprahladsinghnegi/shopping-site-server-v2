@@ -1,5 +1,5 @@
 import { ItemDocument, ItemModel } from "../../database/model/item.model";
-import { Resolver, Query, Args, Mutation, Arg } from "type-graphql";
+import { Resolver, Query, Args, Arg, Mutation } from "type-graphql";
 import { AddItemInput, ItemIdsResponse, ItemResponse } from "../types/item.types";
 import { InventoryDocument, InventoryModel } from "../../database/model/inventory.model";
 
@@ -49,21 +49,6 @@ export class ItemResolver {
         //     throw new Error('Unable to get inventory by Id')
         // }
         // //constract item
-
-        // await ItemModel.
-        //     findOne({ _id: itemId }).
-        //     populate('inventory').
-        //     exec(function (err: any, inventory: any) {
-        //         if (err) {
-        //             console.log('err', err)
-        //             return false
-        //         }
-        //         else {
-        //             console.log('The author is %s', inventory.inventory);
-        //             return true
-        //             // prints "The author is Ian Fleming"
-        //         }
-        //     });
 
         //method 2
         // populate({path: "blogs",populate: {path: "comments",select: { body: 1 }}}) -> for nested

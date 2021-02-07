@@ -95,22 +95,22 @@ export class UserResolver {
     ): Promise<boolean> {
 
         // check whether the email already exists 
-        let isEmailExists = await UserModel.find({ 'email': email })
+        let isEmailExists = await UserModel.findOne({ 'email': email })
         if (isEmailExists) {
             throw new Error('email already exists')
         }
 
         // hash the password before storing to db 
-        const hashedPassowd = await hash(password, process.env.HASH_SALT!)
+        const hashedPassowd = await hash(password, 7) //process.env.HASH_SALT!
         if (!hashedPassowd) {
             throw new Error('unable to hash the password! please try after some time')
         }
 
         //create empty card for user
-        const newCart = new CartModel()
+        const newCart = await CartModel.create({})
 
         // try to add the user 
-        return UserModel.create({ email, password: hashedPassowd, lastName, firstName, cart: newCart }).then(_res => {
+        return UserModel.create({ email, password: hashedPassowd, lastName, firstName, cart: newCart._id }).then(_res => {
             console.log('user added!', _res)
             return true
         }).catch(_err => {
