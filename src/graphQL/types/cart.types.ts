@@ -1,10 +1,9 @@
 import { Min } from "class-validator";
 import { ArgsType, Field, InputType, Int, ObjectType } from "type-graphql";
-import { Item } from "./item.types";
 
 @InputType({ description: "For update item qunatity in cart" })
 @ArgsType()
-export class AdjustItemQuantity implements Partial<Item> {
+export class AdjustItemQuantity {
     // @Field(() => Int, { nullable: true })
     // take?: number;
 
@@ -31,7 +30,7 @@ export class AddTOCart extends AdjustItemQuantity {
 @ObjectType()
 export class CartItem {
     @Field(() => String)
-    item: string;
+    itemId: string;
 
     @Field(() => Int)
     quantity: number;
@@ -39,10 +38,12 @@ export class CartItem {
 
 @ObjectType()
 export class CartResponse {
+    @Field(() => String)
+    cartId?: string
+
     @Field(() => [CartItem])
     items: CartItem[];
 
-    @Field(() => Int)
+    @Field(() => Int, { defaultValue: 0 })
     count: number;
-
 }

@@ -9,6 +9,7 @@ import { sendRefreshToken } from '../../utils/sendRefreshToken';
 import { createAccessToken, createRefreshToken } from '../../utils/auth';
 import { CartModel } from '../../database/model/cart.model';
 import { isAuth } from '../../utils/isAuthMiddleware';
+import { generateRendomString } from '../../utils/generateId';
 
 @ObjectType()
 class LoginResponse {
@@ -52,7 +53,7 @@ export class UserResolver {
         @Arg('userId', () => String) userId: string
     ): Promise<boolean> {
         //trying to increment user's token in database
-        const updateUserToken = await UserModel.updateOne({ _id: userId }, { $inc: { tokenNumber: 1 } })
+        const updateUserToken = await UserModel.updateOne({ userId }, { $inc: { tokenNumber: 1 } })
         if (!updateUserToken) {
             throw new Error('Unbale to increment user tokeNumber');
 
@@ -65,7 +66,8 @@ export class UserResolver {
     async loginUser(@Arg('email') email: string, @Arg('password') password: string, @Ctx() { res }: Context): Promise<LoginResponse> {
 
         // try to get the user using email, if not able to get user means email is not registered 
-        const user: UserDocument = await UserModel.findOne({ email })
+        const user: UserDocument = await UserModel.findOne({ email }).populate('cart')
+        console.log(user)
         if (!user) {
             throw new Error(`Email doesn't register! please register`)
         }
@@ -89,10 +91,10 @@ export class UserResolver {
     }
 
     //register
-    @Mutation(() => Boolean)
+    @Mutation(() => String)
     async registerUser(
         @Args() { email, firstName, lastName, password }: RegisterUser
-    ): Promise<boolean> {
+    ): Promise<string> {
 
         // check whether the email already exists 
         let isEmailExists = await UserModel.findOne({ 'email': email })
@@ -107,17 +109,18 @@ export class UserResolver {
         }
 
         //create empty card for user
-        const newCart = await CartModel.create({})
+        const userCartId: string = generateRendomString();
+        const newCart = await CartModel.create({ cartId: userCartId })
 
         // try to add the user 
-        return UserModel.create({ email, password: hashedPassowd, lastName, firstName, cart: newCart._id }).then(_res => {
+        const userId: string = generateRendomString();
+        return UserModel.create({ userId, email, password: hashedPassowd, lastName, firstName, cart: newCart._id }).then(_res => {
             console.log('user added!', _res)
-            return true
+            return userId
         }).catch(_err => {
             console.log('unable to add user!', _err)
             throw new Error('unable to add user!')
         })
-
 
     }
 

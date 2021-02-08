@@ -1,12 +1,8 @@
 import mongoose, { Document } from "mongoose";
 import { CartSchema } from "../schema/cart";
-import { ItemDocument } from "./item.model";
-
-export interface ICart {
-    item: ItemDocument['_id'];
-    quantity: number;
-}
+import { ICart } from "../types/cart";
 export interface CartDocument extends Document {
+    cartId: string;
     items: Array<ICart>
 }
 export const CartModel = mongoose.model<CartDocument>('carts', CartSchema)

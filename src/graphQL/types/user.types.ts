@@ -1,14 +1,18 @@
 import { ObjectType, Field, ArgsType, InputType } from "type-graphql";
+import { CartResponse } from "./cart.types";
 
 @ObjectType()
 export class User {
     @Field(() => String)
-    email: string;
+    userId: string;
 
     @Field(() => String)
+    email: string;
+
+    // @Field(() => String)
     password?: string;
 
-    @Field()
+    @Field(() => String)
     firstName: string;
 
     @Field(() => String, { nullable: true })
@@ -16,6 +20,9 @@ export class User {
 
     // @Field(() => Int, { defaultValue: 0 })
     tokenNumber: number;
+
+    @Field(() => CartResponse)
+    cart: CartResponse;
 
 }
 

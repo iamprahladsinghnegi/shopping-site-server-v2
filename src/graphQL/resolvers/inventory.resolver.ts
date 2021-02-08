@@ -8,7 +8,7 @@ export class InventoryResolver {
     async getInventoryLevelByInventoryId(
         @Arg('inventoryId') inventoryId: string
     ): Promise<number> {
-        const inventory: InventoryDocument = await InventoryModel.findOne({ _id: inventoryId }, { available: 1 })
+        const inventory: InventoryDocument = await InventoryModel.findOne({ inventoryId }, { available: 1 })
         if (!inventory) {
             throw new Error('Unable to get inventory by inventoryId!')
         }
@@ -21,7 +21,7 @@ export class InventoryResolver {
         @Arg('inventoryId') inventoryId: string,
         @Arg('quantity') quantity: number
     ): Promise<boolean> {
-        const isInventoryUpdated = await InventoryModel.updateOne({ _id: inventoryId }, { $set: { available: quantity } })
+        const isInventoryUpdated = await InventoryModel.updateOne({ inventoryId }, { $set: { available: quantity } })
         if (!isInventoryUpdated) {
             throw new Error('Unable to updated Inventory!')
         }
@@ -33,7 +33,7 @@ export class InventoryResolver {
         @Arg('inventoryId') inventoryId: string,
         @Arg('quantity') quantity: number
     ): Promise<boolean> {
-        const isInventoryUpdated = await InventoryModel.updateOne({ _id: inventoryId }, { $inc: { available: quantity } })
+        const isInventoryUpdated = await InventoryModel.updateOne({ inventoryId }, { $inc: { available: quantity } })
         if (!isInventoryUpdated) {
             throw new Error('Unable to updated Inventory!')
         }
@@ -45,7 +45,7 @@ export class InventoryResolver {
         @Arg('inventoryId') inventoryId: string,
         @Arg('quantity') quantity: number
     ): Promise<boolean> {
-        const isInventoryUpdated = await InventoryModel.updateOne({ _id: inventoryId }, { $inc: { available: - quantity } })
+        const isInventoryUpdated = await InventoryModel.updateOne({ inventoryId }, { $inc: { available: - quantity } })
         if (!isInventoryUpdated) {
             throw new Error('Unable to updated Inventory!')
         }

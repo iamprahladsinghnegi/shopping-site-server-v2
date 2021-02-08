@@ -1,8 +1,7 @@
-export interface ICartItem {
-    id: string;
-    quantity: number;
-}
+import { ItemDocument } from "../model/item.model";
 
 export interface ICart {
-    items: Array<ICartItem>
+    item: ItemDocument['_id'];
+    itemId: string;
+    quantity: number;
 }

@@ -2,6 +2,7 @@ import { ItemDocument, ItemModel } from "../../database/model/item.model";
 import { Resolver, Query, Args, Arg, Mutation } from "type-graphql";
 import { AddItemInput, ItemIdsResponse, ItemResponse } from "../types/item.types";
 import { InventoryDocument, InventoryModel } from "../../database/model/inventory.model";
+import { generateRendomString } from "../../utils/generateId";
 
 @Resolver()
 export class ItemResolver {
@@ -24,12 +25,12 @@ export class ItemResolver {
     @Query(() => ItemIdsResponse)
     async geAllItemsIds(): Promise<ItemIdsResponse> {
         let itemResponse: ItemIdsResponse = { itemIds: [], count: 0 };
-        const itemIds: [ItemDocument] = await ItemModel.find({}, { projection: { _id: 1 } })
+        const itemIds: [ItemDocument] = await ItemModel.find({}, { itemId: 1 })
         if (!itemIds) {
             return itemResponse
         }
         itemIds.forEach(item => {
-            itemResponse.itemIds.push(item._id)
+            itemResponse.itemIds.push(item.itemId)
         })
         itemResponse.count = itemResponse.itemIds.length
         return itemResponse
@@ -53,7 +54,7 @@ export class ItemResolver {
         //method 2
         // populate({path: "blogs",populate: {path: "comments",select: { body: 1 }}}) -> for nested
         //.populate('inventory', { available: 1, price: 1 }) -> projection
-        const item: ItemDocument = await ItemModel.findOne({ _id: itemId }).populate('inventory')
+        const item: ItemDocument = await ItemModel.findOne({ itemId }).populate('inventory')
         if (!item) {
             throw new Error('Unable to get item by Id')
         }
@@ -61,26 +62,25 @@ export class ItemResolver {
 
     }
 
-    @Mutation(() => Boolean)
+    @Mutation(() => String)
     async addItem(
-        @Args() { url, name, category, subCategory, inventory }: AddItemInput
-    ): Promise<boolean> {
-        const addInventory: InventoryDocument = new InventoryModel(inventory)
+        @Args() { url, name, category, subCategory, inventoryInfo }: AddItemInput
+    ): Promise<string> {
 
-        const isInventoryAdded = await InventoryModel.create(addInventory)
+        //create inventory for item
+        const inventoryId: string = generateRendomString();
+        const isInventoryAdded: InventoryDocument = await InventoryModel.create({ inventoryId, ...inventoryInfo })
         if (!isInventoryAdded) {
             throw new Error('Unbale to add Inventory!')
         }
 
-        const item: ItemDocument = new ItemModel({ url, name, category, subCategory, inventory: isInventoryAdded._id })
-
-        const isItemAdded = await ItemModel.create(item)
-
+        //create item add link inventory
+        const itemId: string = generateRendomString();
+        const isItemAdded: ItemDocument = await ItemModel.create({ itemId, url, name, category, subCategory, inventory: isInventoryAdded._id })
         if (!isItemAdded) {
             throw new Error('Unbale to add Item!')
         }
-
-        return true
+        return itemId
     }
 
 

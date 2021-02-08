@@ -1,6 +1,7 @@
-import { IInvetory } from "./inventory";
+// import { IInvetory } from "./inventory";
 
 export interface IItem {
+    itemId: string;
     url: string;
     name: string;
     category: string;
@@ -8,6 +9,6 @@ export interface IItem {
 }
 
 
-export interface ItemObject extends IItem {
-    inventory: IInvetory
-}
+// export interface ItemObject extends IItem {
+//     inventory: IInvetory
+// }
