@@ -42,13 +42,14 @@ const db: string = "mongodb://127.0.0.1:27017/server";
         }
         // token is valid 
         // we can send back an access token
-        const user: UserDocument = await UserModel.findOne({ _id: payload.userId })
+        const user: UserDocument = await UserModel.findOne({ userId: payload.userId }, { _id: 0, userId: 1, tokenNumber: 1 })
+        console.log(user)
         if (!user) {
             console.log('user not found')
             return res.send({ ok: false, accessToken: '' })
         }
         if (user.tokenNumber !== payload.tokenNumber) {
-            console.log('')
+            console.log('token number different! please log in again')
             return res.send({ ok: false, accessToken: '' })
 
         }
@@ -59,7 +60,7 @@ const db: string = "mongodb://127.0.0.1:27017/server";
 
     })
     const connect = () => {
-        mongoose.connect(db, { useNewUrlParser: true }).then(async () => {
+        mongoose.connect(db, { useNewUrlParser: true, autoIndex: true }).then(async () => {
             const apolloServer = new ApolloServer({
                 schema: await buildSchema({
                     resolvers: [UserResolver, InventoryResolver, CartResolver, ItemResolver]

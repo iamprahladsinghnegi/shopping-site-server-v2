@@ -36,7 +36,7 @@ export class UserResolver {
         try {
             const token = authorization.split(' ')[1]
             const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!)
-            const user: UserDocument = await UserModel.findOne({ _id: payload.userId })
+            const user: UserDocument = await UserModel.findOne({ userId: payload.userId }).populate('cart')
             if (!user) {
                 throw new Error('unable to get user')
             }
