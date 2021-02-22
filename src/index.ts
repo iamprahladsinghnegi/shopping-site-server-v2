@@ -14,7 +14,11 @@ import { UserResolver } from "./graphQL/resolvers/userResolver";
 import { ItemResolver } from "./graphQL/resolvers/item.resolver";
 import { InventoryResolver } from "./graphQL/resolvers/inventory.resolver";
 import { CartResolver } from "./graphQL/resolvers/cart.resolver";
-// import { TestResolver } from "./graphQL/resolvers/testResolver";
+import { OfferResolver } from "./graphQL/resolvers/offers.resolver";
+// import * as path from "path";
+
+//refer to error handling
+// https://blog.logrocket.com/handling-graphql-errors-like-a-champ-with-unions-and-interfaces/
 const PORT: number = 5555;
 const db: string = "mongodb://127.0.0.1:27017/server";
 
@@ -63,7 +67,9 @@ const db: string = "mongodb://127.0.0.1:27017/server";
         mongoose.connect(db, { useNewUrlParser: true, autoIndex: true }).then(async () => {
             const apolloServer = new ApolloServer({
                 schema: await buildSchema({
-                    resolvers: [UserResolver, InventoryResolver, CartResolver, ItemResolver]
+                    resolvers: [UserResolver, InventoryResolver, CartResolver, ItemResolver, OfferResolver],
+                    // automatically create `schema.gql` file with schema definition in current folder
+                    // emitSchemaFile: path.resolve(__dirname, "schema.gql"),
                 }),
                 context: ({ req, res }) => ({ req, res })
             })

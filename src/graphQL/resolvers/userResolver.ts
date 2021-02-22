@@ -1,6 +1,6 @@
-import { Resolver, Mutation, Arg, ObjectType, Field, Ctx, Args, Query, UseMiddleware } from 'type-graphql';
+import { Resolver, Mutation, Arg, Ctx, Args, Query, UseMiddleware } from 'type-graphql';
 import { hash, compare } from 'bcryptjs';
-import { User } from '../types/user.types';
+import { User, RegisterUserResponse, LoginResponse } from '../types/user.types';
 import { Context } from '../types/context';
 import { verify } from 'jsonwebtoken';
 import { RegisterUser } from '../types/user.types';
@@ -11,13 +11,7 @@ import { CartModel } from '../../database/model/cart.model';
 import { isAuth } from '../../utils/isAuthMiddleware';
 import { generateRendomString } from '../../utils/generateId';
 
-@ObjectType()
-class LoginResponse {
-    @Field()
-    accessToken: string;
-    @Field(() => User)
-    user: User;
-}
+
 
 @Resolver()
 export class UserResolver {
@@ -63,19 +57,29 @@ export class UserResolver {
 
     //login
     @Mutation(() => LoginResponse)
-    async loginUser(@Arg('email') email: string, @Arg('password') password: string, @Ctx() { res }: Context): Promise<LoginResponse> {
+    async loginUser(@Arg('email') email: string, @Arg('password') password: string, @Ctx() { res }: Context): Promise<typeof LoginResponse> {
 
         // try to get the user using email, if not able to get user means email is not registered 
         const user: UserDocument = await UserModel.findOne({ email }).populate('cart')
         console.log(user)
         if (!user) {
-            throw new Error(`Email doesn't register! please register`)
+            // throw new Error(`Email doesn't register! please register`)
+            return {
+                message: "Email doesn't register! please register",
+                errorCode: 1,
+                isEmailExists: false
+            }
         }
 
         // compare the result with user's hashed password
         const isValid = await compare(password, user.password)
         if (!isValid) {
-            throw new Error('Password not matched!')
+            // throw new Error('Password not matched!')
+            return {
+                message: "Password not matched",
+                errorCode: 2,
+                isPasswordMatched: false
+            }
         }
 
         // create and add refresh token in cookie
@@ -91,21 +95,29 @@ export class UserResolver {
     }
 
     //register
-    @Mutation(() => String)
+    @Mutation(() => RegisterUserResponse)
     async registerUser(
         @Args() { email, firstName, lastName, password }: RegisterUser
-    ): Promise<string> {
+    ): Promise<typeof RegisterUserResponse> {
 
         // check whether the email already exists 
         let isEmailExists = await UserModel.findOne({ 'email': email })
         if (isEmailExists) {
-            throw new Error('email already exists')
+            return {
+                message: "email error",
+                errorCode: 1,
+                isUserExists: true
+            }
         }
 
         // hash the password before storing to db 
         const hashedPassowd = await hash(password, 7) //process.env.HASH_SALT!
         if (!hashedPassowd) {
-            throw new Error('unable to hash the password! please try after some time')
+            return {
+                message: "hash error",
+                errorCode: 2,
+                uanbleToHash: true
+            }
         }
 
         //create empty card for user
@@ -115,11 +127,14 @@ export class UserResolver {
         // try to add the user 
         const userId: string = generateRendomString();
         return UserModel.create({ userId, email, password: hashedPassowd, lastName, firstName, cart: newCart._id }).then(_res => {
-            console.log('user added!', _res)
-            return userId
+            return { userId }
         }).catch(_err => {
             console.log('unable to add user!', _err)
-            throw new Error('unable to add user!')
+            return {
+                message: "somthing went wrong",
+                errorCode: 3,
+                isSomethingWorng: true
+            }
         })
 
     }

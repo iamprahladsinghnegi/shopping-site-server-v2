@@ -3,7 +3,7 @@ import { Inventory, InventoryImput } from './inventory.types';
 
 @ObjectType()
 export class ItemIdsResponse {
-    @Field(() => [String])
+    @Field(() => [String]!)
     itemIds: string[];
 
     @Field(() => Int)

@@ -83,7 +83,19 @@ export class ItemResolver {
         return itemId
     }
 
-
+    @Query(() => ItemIdsResponse)
+    async geAllItemCategories(): Promise<ItemIdsResponse> {
+        let itemResponse: ItemIdsResponse = { itemIds: [], count: 0 };
+        const itemIds: [ItemDocument] = await ItemModel.find({}, { itemId: 1 })
+        if (!itemIds) {
+            return itemResponse
+        }
+        itemIds.forEach(item => {
+            itemResponse.itemIds.push(item.itemId)
+        })
+        itemResponse.count = itemResponse.itemIds.length
+        return itemResponse
+    }
 }
 
 
