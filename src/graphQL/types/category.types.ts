@@ -10,3 +10,14 @@ export class CategoryAndSubCategory {
 }
 
 
+@ObjectType()
+export class SubCategoryWithCategoryResponse {
+    @Field(() => String)
+    category: string;
+
+    @Field(() => String)
+    subCategory: string;
+
+    @Field(() => String)
+    image: string;
+}
