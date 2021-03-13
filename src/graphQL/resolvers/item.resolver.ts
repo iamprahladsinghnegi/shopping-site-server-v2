@@ -1,6 +1,6 @@
 import { ItemDocument, ItemModel } from "../../database/model/item.model";
 import { Resolver, Query, Args, Arg, Mutation, Ctx } from "type-graphql";
-import { AddItemInput, AddOrRemove, AddRemoveItemToWishlist, ItemIdsResponse, ItemResponse } from "../types/item.types";
+import { AddItemInput, AddOrRemove, AddRemoveItemToWishlist, ItemDetailsResponse, ItemIdsResponse, ItemResponse } from "../types/item.types";
 import { InventoryDocument, InventoryModel } from "../../database/model/inventory.model";
 import { generateRendomString } from "../../utils/generateId";
 import { CategoryDocument, CategoryModel, SubCategoryDocument, SubCategoryModel } from "../../database/model/category.model";
@@ -11,6 +11,10 @@ import { UserDocument, UserModel } from "../../database/model/user.model";
 
 @Resolver()
 export class ItemResolver {
+    // constructor(
+    //     private readonly itemCollection : typeof ItemModel,
+    // ){}
+
     //TODO -> research
     // private itemsCollection: Item[] = [];
 
@@ -57,7 +61,7 @@ export class ItemResolver {
         // }
 
         //method 2
-        const item: ItemDocument = await ItemModel.findOne({ itemId }).populate('inventory');
+        const item: ItemDocument = await ItemModel.findOne({ itemId }, { description: 0 }).populate('inventory');
         if (!item) {
             throw new Error('Unable to get item by Id');
         }
@@ -68,7 +72,7 @@ export class ItemResolver {
             category: item.category,
             subCategory: item.subCategory,
             name: item.name,
-            url: item.url,
+            url: item.images[0], // temp -> first image
             inventory: item.inventory,
             isStared: false,
         };
@@ -102,9 +106,58 @@ export class ItemResolver {
 
     }
 
+    @Query(() => ItemDetailsResponse)
+    async getItemDetails(
+        @Ctx() context: Context,
+        @Arg('itemId') itemId: string
+    ): Promise<ItemDetailsResponse> {
+        const item: ItemDocument = await ItemModel.findOne({ itemId }).populate('inventory');
+        if (!item) {
+            throw new Error('Unable to get item by Id');
+        }
+
+        let itemResponse: ItemDetailsResponse = {
+            itemId: item.itemId,
+            brand: item.brand,
+            category: item.category,
+            subCategory: item.subCategory,
+            name: item.name,
+            images: item.images,
+            inventory: item.inventory,
+            description: item.description,
+            isStared: false,
+        };
+
+        const authorization = context.req.headers['authorization'];
+        if (!authorization) {
+            return itemResponse;
+        }
+        try {
+            const token = authorization.split(' ')[1];
+            const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!);
+            const isItemStared: UserDocument = await UserModel.findOne({ userId: payload.userId }).populate(
+                {
+                    path: 'staredItems',
+                    model: 'items',
+                    match: { itemId },
+                    select: {
+                        _id: 1
+                    }
+                })
+            console.log(isItemStared)
+            if (!isItemStared || isItemStared.staredItems.length == 0) {
+                return itemResponse;
+            }
+            return { ...itemResponse, isStared: true };
+        } catch (err) {
+            return itemResponse;
+        }
+
+    }
+
     @Mutation(() => String)
     async addItem(
-        @Args() { url, name, category, subCategory, inventoryInfo }: AddItemInput
+        @Args() { name, categoryInfo, subCategoryInfo, inventoryInfo, brand, images, description }: AddItemInput
     ): Promise<string> {
 
         //create inventory for item
@@ -116,32 +169,32 @@ export class ItemResolver {
 
         //create item add link inventory
         const itemId: string = generateRendomString();
-        const isItemAdded: ItemDocument = await ItemModel.create({ itemId, url, name, category, subCategory, inventory: isInventoryAdded._id })
+        const isItemAdded: ItemDocument = await ItemModel.create({ itemId, name, brand, category: categoryInfo.name, subCategory: subCategoryInfo.name, images, description, inventory: isInventoryAdded._id })
         if (!isItemAdded) {
             throw new Error('Unbale to add Item!')
         }
 
-        const isSubCategoryExists: SubCategoryDocument = await SubCategoryModel.findOne({ name: subCategory })
+        const isSubCategoryExists: SubCategoryDocument = await SubCategoryModel.findOne({ name: subCategoryInfo.name })
         let isSubCategoryAdded: SubCategoryDocument;
         const subCategoryId: string = generateRendomString();
         if (isSubCategoryExists) {
-            isSubCategoryAdded = await SubCategoryModel.findOneAndUpdate({ name: subCategory }, { $addToSet: { itemRefs: isItemAdded._id } }, { new: true }) //to return the updated document
+            isSubCategoryAdded = await SubCategoryModel.findOneAndUpdate({ name: subCategoryInfo.name }, { $addToSet: { itemRefs: isItemAdded._id } }, { new: true }) //to return the updated document
         }
         else {
-            isSubCategoryAdded = await SubCategoryModel.create({ subCategoryId, name: subCategory, image: "img1", itemRefs: [isItemAdded._id] })
+            isSubCategoryAdded = await SubCategoryModel.create({ subCategoryId, name: subCategoryInfo.name, image: subCategoryInfo.image, itemRefs: [isItemAdded._id] })
         }
         if (!isSubCategoryAdded) {
             throw new Error('Unbale to add Subcategory!')
         }
 
-        const isCategoryExists: CategoryDocument = await CategoryModel.findOne({ name: category })
+        const isCategoryExists: CategoryDocument = await CategoryModel.findOne({ name: categoryInfo.name })
         let isCategoryAdded: CategoryDocument;
         const categoryId: string = generateRendomString();
         if (isCategoryExists) {
-            isCategoryAdded = await CategoryModel.updateOne({ name: category }, { $addToSet: { subCategoryRefs: isSubCategoryAdded._id } }, { new: true })
+            isCategoryAdded = await CategoryModel.updateOne({ name: categoryInfo.name }, { $addToSet: { subCategoryRefs: isSubCategoryAdded._id } }, { new: true })
         }
         else {
-            isCategoryAdded = await CategoryModel.create({ categoryId, name: category, image: "img2", subCategoryRefs: [isSubCategoryAdded._id] })
+            isCategoryAdded = await CategoryModel.create({ categoryId, name: categoryInfo.name, image: categoryInfo.image, subCategoryRefs: [isSubCategoryAdded._id] })
         }
         if (!isCategoryAdded) {
             throw new Error('Unbale to add Category!')
@@ -221,23 +274,61 @@ export class ItemResolver {
         @Arg('subCategory') subCategory: string
     ): Promise<ItemIdsResponse | void> {
         let response: ItemIdsResponse = { itemIds: [], count: 0 };
+        //TODO: unable to sort based on filter(nested population)
         const allItemsBySubCategory: SubCategoryDocument = await SubCategoryModel.findOne({ name: subCategory }).populate(
             {
                 path: 'itemRefs',
                 model: 'items',
                 select: {
-                    itemId: 1
-                }
+                    itemId: 1,
+                    // inventory: 1,
+                    name: 1
+                },
+                options: {
+                    sort: {
+                        name: 1,
+                    },
+                },
+                // populate: {
+                //     path: 'inventory',
+                //     model: 'inventories',
+                //     select: {
+                //         _id: 1,
+                //         price: 1
+                //     }
+                // },
             })
         if (!allItemsBySubCategory) {
             throw new Error("Don't have items!")
         }
         response.itemIds = allItemsBySubCategory.itemRefs.map(element => {
+            console.log(element)
             return element.itemId
         })
         response.count = response.itemIds.length
+        const itemIds = await ItemModel.find({ subCategory }, { itemId: 1, _id: 0, name: 1 }).populate({
+            path: 'inventory',
+            model: 'inventories',
+        }).sort({ "name": 1 })
+        console.log(itemIds)
         return response;
     }
+
+    // @Query(() => ItemIdsResponse)
+    // async getAllItemIdsBySubCategoryWithFilter(
+    //     @Args() { subCategory, filterOptions }: GetItemIdsBySubCategoryWithFilter,
+    // ): Promise<ItemIdsResponse | void> {
+    //     let response: ItemIdsResponse = { itemIds: [], count: 0 };
+    //     const itemIds = await ItemModel.find({ subCategory }, { itemId: 1, _id: 0 }).populate({
+    //         path: 'inventory',
+    //         model: 'inventories',
+    //         sort: {
+    //             price:1
+    //         }
+    //     })
+    //     response.count = response.itemIds.length
+    //     return response;
+    // }
 
     @Mutation(() => Boolean)
     async addRemoveItemToWishlist(

@@ -20,7 +20,7 @@ import { OfferResolver } from "./graphQL/resolvers/offers.resolver";
 //refer to error handling
 // https://blog.logrocket.com/handling-graphql-errors-like-a-champ-with-unions-and-interfaces/
 const PORT: number = 5555;
-const db: string = "mongodb://127.0.0.1:27017/server";
+const db: string = "mongodb://127.0.0.1:27017/server_new";
 
 (async () => {
     const app: Application = express();
