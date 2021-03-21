@@ -1,6 +1,6 @@
 import { ItemDocument, ItemModel } from "../../database/model/item.model";
 import { Resolver, Query, Args, Arg, Mutation, Ctx } from "type-graphql";
-import { AddItemInput, AddOrRemove, AddRemoveItemToWishlist, ItemDetailsResponse, ItemIdsResponse, ItemResponse } from "../types/item.types";
+import { AddItemInput, AddOrRemove, AddRemoveItemToWishlist, SortFilter, GetItemIdsBySubCategoryWithFilter, ItemDetailsResponse, ItemIdsResponse, ItemResponse } from "../types/item.types";
 import { InventoryDocument, InventoryModel } from "../../database/model/inventory.model";
 import { generateRendomString } from "../../utils/generateId";
 import { CategoryDocument, CategoryModel, SubCategoryDocument, SubCategoryModel } from "../../database/model/category.model";
@@ -8,6 +8,7 @@ import { CategoryAndSubCategory, SubCategoryWithCategoryResponse } from "../type
 import { Context } from "../types/context";
 import { verify } from "jsonwebtoken";
 import { UserDocument, UserModel } from "../../database/model/user.model";
+//https://stackoverflow.com/questions/31180455/mongoose-sort-by-populated-field?rq=1
 
 @Resolver()
 export class ItemResolver {
@@ -314,21 +315,88 @@ export class ItemResolver {
         return response;
     }
 
-    // @Query(() => ItemIdsResponse)
-    // async getAllItemIdsBySubCategoryWithFilter(
-    //     @Args() { subCategory, filterOptions }: GetItemIdsBySubCategoryWithFilter,
-    // ): Promise<ItemIdsResponse | void> {
-    //     let response: ItemIdsResponse = { itemIds: [], count: 0 };
-    //     const itemIds = await ItemModel.find({ subCategory }, { itemId: 1, _id: 0 }).populate({
-    //         path: 'inventory',
-    //         model: 'inventories',
-    //         sort: {
-    //             price:1
-    //         }
-    //     })
-    //     response.count = response.itemIds.length
-    //     return response;
-    // }
+    @Query(() => ItemIdsResponse)
+    async getAllItemIdsBySubCategoryWithFilter(
+        @Args() { subCategory, filterOptions }: GetItemIdsBySubCategoryWithFilter,
+    ): Promise<ItemIdsResponse | void> {
+        let response: ItemIdsResponse = { itemIds: [], count: 0 };
+        //TODO: after ppopulate cant peform sort https://github.com/Automattic/mongoose/issues/4481
+        // const items = await ItemModel.find({ subCategory }, { itemId: 1, name: 1, _id: 0, inventory: 1 }).populate({
+        //     path: 'inventory',
+        //     model: 'inventories',
+        // options: {
+        //     sort: {
+        //         price: 1
+        //     }
+        // }
+        // }).sort('inventory.price')
+        let pipeline: Array<any> = [{
+            "$match": {
+                subCategory
+            }
+        },
+        {
+            "$project": {
+                'inventory': 1,
+                'itemId': 1,
+                'name': 1
+            }
+        },
+        {
+            "$lookup": {
+                "from": "inventories",
+                "localField": "inventory",
+                "foreignField": "_id",
+                "as": "inventory"
+            }
+        },
+        {
+            "$unwind": "$inventory"
+        }
+        ];
+        switch (filterOptions.sort) {
+            case SortFilter.NEW:
+                break;
+            case SortFilter.POPULARITY:
+                break;
+            case SortFilter.DISCOUNT:
+                pipeline.push(
+                    {
+                        "$sort": {
+                            "inventory.discount": -1
+                        }
+                    }
+                )
+                break;
+            case SortFilter.COSTLY:
+                pipeline.push(
+                    {
+                        "$sort": {
+                            "inventory.price": -1
+                        }
+                    }
+                )
+                break;
+            case SortFilter.BUDGET:
+                pipeline.push(
+                    {
+                        "$sort": {
+                            "inventory.price": 1
+                        }
+                    }
+                )
+                break;
+            default:
+                // it will never be hitten ;)
+                break;
+        }
+        const items = await ItemModel.aggregate(pipeline);
+        items.forEach((element: ItemDocument) => {
+            response.itemIds.push(element.itemId);
+        });
+        response.count = response.itemIds.length
+        return response;
+    }
 
     @Mutation(() => Boolean)
     async addRemoveItemToWishlist(

@@ -32,6 +32,9 @@ export class CartItem {
     @Field(() => String)
     itemId: string;
 
+    @Field(() => String)
+    size: string;
+
     @Field(() => Int)
     quantity: number;
 }
@@ -45,5 +48,6 @@ export class CartResponse {
     items: CartItem[];
 
     @Field(() => Int, { defaultValue: 0 })
+    @Min(0)
     count: number;
 }

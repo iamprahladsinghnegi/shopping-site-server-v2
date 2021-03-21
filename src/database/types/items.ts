@@ -14,4 +14,11 @@ export interface IItemDescription {
     fit: string;
     materials: string;
     care: string;
+    specifications: Array<ISpecification>;
+    extra: string;
+}
+
+export interface ISpecification {
+    key: string;
+    value: string;
 }

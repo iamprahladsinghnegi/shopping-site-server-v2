@@ -13,5 +13,7 @@ export const ItemSchema: Schema = new Schema({
         fit: { type: String, required: true },
         materials: { type: String, required: true },
         care: { type: String, required: true },
+        specifications: [{ _id: false, key: { type: String, required: true }, value: { type: String, required: true } }],
+        extra: { type: String },
     }
 });

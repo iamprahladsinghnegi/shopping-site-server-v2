@@ -10,6 +10,15 @@ export class ItemIdsResponse {
     count: number;
 }
 
+@InputType('SpecificationsInput')
+@ObjectType('SpecificationsObject')
+export class Specifications {
+    @Field(() => String)
+    key: string;
+
+    @Field(() => String)
+    value: string;
+}
 
 @InputType('DescriptionInput')
 @ObjectType('DescriptionObject')
@@ -28,6 +37,12 @@ export class Description {
 
     @Field(() => String)
     care: string;
+
+    @Field(() => [Specifications], { nullable: true })
+    specifications: Specifications[];
+
+    @Field(() => String, { nullable: true })
+    extra: string;
 }
 
 @ObjectType()
@@ -80,7 +95,7 @@ export class AddItemInput implements Partial<ItemResponse> {
     @Field(() => NameWithImageInput)
     subCategoryInfo: NameWithImageInput;
 
-    @Field(() => [String!])
+    @Field(() => [String])
     images: string[];
 
     @Field(() => InventoryImput)
@@ -140,24 +155,26 @@ export class AddRemoveItemToWishlist {
     action: AddOrRemove;
 }
 
-// ["What's New", "Popularity", "Better Discount", "Price: High to Low", "Price: Low to High"]
 export enum SortFilter {
     NEW = "What's New",
     POPULARITY = "Popularity",
-    DISCOUNT = "Popularity",
+    DISCOUNT = "Better Discount",
     COSTLY = "Price: High to Low",
     BUDGET = "Price: Low to High"
 }
 
 registerEnumType(SortFilter, {
-    name: "Sort Filter",
-    description: "For Sort the item",
+    name: "SortFilter",
+    description: "For Sort the itemIds",
 });
 
 @InputType()
 export class FilterOptions {
     @Field(() => SortFilter)
     sort: SortFilter;
+
+    @Field(() => [String])
+    color: string[];
 
     @Field(() => [String])
     price: string[];
