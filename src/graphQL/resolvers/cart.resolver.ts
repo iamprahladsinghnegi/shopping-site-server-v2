@@ -1,5 +1,5 @@
 import { Resolver, Query, Args, Mutation, Arg, Ctx } from "type-graphql";
-import { AdjustItemQuantity, CartResponse } from "../types/cart.types"; //AddTOCart
+import { AdjustCardItemQuantity, AdjustCardItemSize, AdjustCartItem, CartResponse } from "../types/cart.types"; //AddTOCart
 import { CartDocument, CartModel } from "../../database/model/cart.model";
 import { ICartItem } from '../../database/types/cart'
 import { UserDocument, UserModel } from "../../database/model/user.model";
@@ -16,12 +16,29 @@ export class CartResolver {
         @Arg('cartId') cartId: string
     ): Promise<CartResponse> {
         let cartResponse: CartResponse = { items: [], count: 0 };
-        const cartDetails: CartDocument = await CartModel.findOne({ cartId }, { "items.itemId": 1, "items.quantity": 1 })
+        const cartDetails: CartDocument = await CartModel.findOne({ cartId }, { "items.itemId": 1, "items.quantity": 1, "items.size": 1 }).populate(
+            {
+                path: 'items.item',
+                model: 'items',
+                select: {
+                    inventory: 1,
+                    _id: 0
+                },
+                populate: {
+                    path: 'inventory',
+                    model: 'inventories',
+                    select: {
+                        _id: 0,
+                        price: 1,
+                        discount: 1
+                    },
+                }
+            })
         if (!cartDetails) {
             return cartResponse;
         }
         cartDetails.items.forEach(item => {
-            cartResponse.items.push({ itemId: item.itemId, quantity: item.quantity, size: item.size });
+            cartResponse.items.push({ itemId: item.itemId, quantity: item.quantity, size: item.size, price: item.item.inventory.price, discount: item.item.inventory.discount });
         })
         cartResponse.count = cartResponse.items.length;;
         cartResponse.cartId = cartId;
@@ -29,22 +46,22 @@ export class CartResolver {
     }
 
     // cart details by userId
-    @Query(() => CartResponse)
-    async getCartDetailsByUserId(
-        @Arg('userId') userId: string
-    ): Promise<CartResponse> {
-        let cartResponse: CartResponse = { items: [], count: 0 };
-        const userDetails: UserDocument = await UserModel.findOne({ userId }, { "cart": 1 }).populate('cart');
-        if (!userDetails || !userDetails.cart || !userDetails.cart.items) {
-            return cartResponse;
-        }
-        userDetails.cart.items.forEach((item: ICartItem) => {
-            cartResponse.items.push({ itemId: item.itemId, quantity: item.quantity, size: item.size });
-        })
-        cartResponse.count = cartResponse.items.length;
-        cartResponse.cartId = userDetails.cart.cartId;
-        return cartResponse
-    }
+    // @Query(() => CartResponse)
+    // async getCartDetailsByUserId(
+    //     @Arg('userId') userId: string
+    // ): Promise<CartResponse> {
+    //     let cartResponse: CartResponse = { items: [], count: 0 };
+    //     const userDetails: UserDocument = await UserModel.findOne({ userId }, { "cart": 1 }).populate('cart');
+    //     if (!userDetails || !userDetails.cart || !userDetails.cart.items) {
+    //         return cartResponse;
+    //     }
+    //     userDetails.cart.items.forEach((item: ICartItem) => {
+    //         cartResponse.items.push({ itemId: item.itemId, quantity: item.quantity, size: item.size });
+    //     })
+    //     cartResponse.count = cartResponse.items.length;
+    //     cartResponse.cartId = userDetails.cart.cartId;
+    //     return cartResponse
+    // }
 
     // cart details by userId
     @Query(() => CartResponse)
@@ -60,16 +77,38 @@ export class CartResolver {
             const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!);
 
             let cartResponse: CartResponse = { items: [], count: 0 };
-            const userDetails: UserDocument = await UserModel.findOne({ userId: payload.userId }, { "cart": 1 }).populate('cart');
+            const userDetails: UserDocument = await UserModel.findOne({ userId: payload.userId }, { "cart": 1 }).populate(
+                {
+                    path: 'cart',
+                    model: 'carts',
+                    populate: {
+                        path: 'items.item',
+                        model: 'items',
+                        select: {
+                            inventory: 1,
+                            _id: 0
+                        },
+                        populate: {
+                            path: 'inventory',
+                            model: 'inventories',
+                            select: {
+                                _id: 0,
+                                price: 1,
+                                discount: 1
+                            },
+                        }
+                    }
+                }
+            )
             if (!userDetails || !userDetails.cart || !userDetails.cart.items) {
                 return cartResponse;
             }
             userDetails.cart.items.forEach((item: ICartItem) => {
-                cartResponse.items.push({ itemId: item.itemId, quantity: item.quantity, size: item.size });
+                cartResponse.items.push({ itemId: item.itemId, quantity: item.quantity, size: item.size, price: item.item.inventory.price, discount: item.item.inventory.discount });
             })
             cartResponse.count = cartResponse.items.length;
             cartResponse.cartId = userDetails.cart.cartId;
-            return cartResponse
+            return cartResponse;
         }
         catch (e) {
             console.log(e);
@@ -92,14 +131,34 @@ export class CartResolver {
     //     return true
     // }
 
-    @Mutation(() => Boolean)
-    async adjustItemQyantity(@Args() { itemId, quantity, cartId }: AdjustItemQuantity): Promise<boolean> {
+    @Mutation(() => Number)
+    async adjustItemQyantity(@Args() { itemId, quantity, cartId }: AdjustCardItemQuantity): Promise<number> {
         const cart = await CartModel.updateOne({ cartId, "items.itemId": itemId }, { $set: { "items.$.quantity": quantity } })
         if (!cart || cart.nModified === 0) {
-            throw new Error('unbale to adjust item quantity!')
+            throw new Error('unbale to adjust item quantity!');
         }
         console.log(`successfully adjusted item quantity `);
-        return true
+        return quantity;
+    }
+
+    @Mutation(() => String)
+    async adjustItemSize(@Args() { itemId, size, cartId }: AdjustCardItemSize): Promise<string> {
+        const cart = await CartModel.updateOne({ cartId, "items.itemId": itemId }, { $set: { "items.$.size": size } })
+        if (!cart || cart.nModified === 0) {
+            throw new Error('unbale to adjust item size!');
+        }
+        console.log(`successfully adjusted item size `);
+        return size;
+    }
+
+    @Mutation(() => String)
+    async removeItemFromCart(@Args() { itemId, cartId }: AdjustCartItem): Promise<string> {
+        const cart = await CartModel.updateOne({ cartId }, { $pull: { items: { itemId } } })
+        if (!cart || cart.nModified === 0) {
+            throw new Error('unbale to remove item from cart!');
+        }
+        console.log(`successfully removed item from cart`);
+        return itemId;
     }
 
     @Mutation(() => Boolean)
@@ -151,7 +210,7 @@ export class CartResolver {
             // cart.items.push({ quantity, itemId, item: isItemExists._id });
             // await cart.save();
 
-            const isCartUpdated = await CartModel.updateOne({ cartId: user.cart.cartId }, { $addToSet: { "items": { quantity, itemId, size, item: isItemExists._id } } })
+            const isCartUpdated = await CartModel.updateOne({ cartId: user.cart.cartId }, { $addToSet: { items: { quantity, itemId, size, item: isItemExists._id } } })
             if (!isCartUpdated && isCartUpdated.nModified === 0) {
                 throw new Error(`Unbale to add to cart!`);
             }

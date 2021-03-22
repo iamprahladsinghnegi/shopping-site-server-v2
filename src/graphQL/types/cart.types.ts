@@ -3,25 +3,29 @@ import { ArgsType, Field, InputType, Int, ObjectType } from "type-graphql";
 
 @InputType({ description: "For update item qunatity in cart" })
 @ArgsType()
-export class AdjustItemQuantity {
-    // @Field(() => Int, { nullable: true })
-    // take?: number;
-
+export class AdjustCartItem {
     @Field(() => String)
     cartId: string;
 
     @Field()
     itemId: string;
-
+}
+@ArgsType()
+export class AdjustCardItemQuantity extends AdjustCartItem {
     @Field(() => Int, { defaultValue: 1 })
     @Min(1)
     quantity: number;
+}
 
+@ArgsType()
+export class AdjustCardItemSize extends AdjustCartItem {
+    @Field(() => String)
+    size: string;
 }
 
 @InputType({ description: "details for adding item to cart" })
 @ArgsType()
-export class AddTOCart extends AdjustItemQuantity {
+export class AddTOCart extends AdjustCardItemQuantity {
     @Field(() => String, { nullable: true })
     userId?: string;
 
@@ -37,6 +41,13 @@ export class CartItem {
 
     @Field(() => Int)
     quantity: number;
+
+    @Field(() => Int)
+    price: number;
+
+    @Field(() => Int, { defaultValue: 0 })
+    @Min(0)
+    discount: number;
 }
 
 @ObjectType()
