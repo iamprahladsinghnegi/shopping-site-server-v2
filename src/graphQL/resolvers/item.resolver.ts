@@ -1,6 +1,6 @@
 import { ItemDocument, ItemModel } from "../../database/model/item.model";
 import { Resolver, Query, Args, Arg, Mutation, Ctx } from "type-graphql";
-import { AddItemInput, AddOrRemove, AddRemoveItemToWishlist, SortFilter, GetItemIdsBySubCategoryWithFilter, ItemDetailsResponse, ItemIdsResponse, ItemResponse } from "../types/item.types";
+import { AddItemInput, AddOrRemove, AddRemoveItemToWishlist, SortFilter, GetItemIdsBySubCategoryWithFilter, ItemDetailsResponse, ItemIdsResponse, ItemResponse, SubCatWithItemIdsResponse, ItemIdsInput, ItemArrayElement } from "../types/item.types";
 import { InventoryDocument, InventoryModel } from "../../database/model/inventory.model";
 import { generateRendomString } from "../../utils/generateId";
 import { CategoryDocument, CategoryModel, SubCategoryDocument, SubCategoryModel } from "../../database/model/category.model";
@@ -434,6 +434,61 @@ export class ItemResolver {
             throw new Error(`Unbale to ${action} item!`);
         }
 
+    }
+
+    @Query(() => [SubCatWithItemIdsResponse])
+    async allSubCategoriesWithItem(): Promise<Array<SubCatWithItemIdsResponse> | void> {
+
+        const allItemsBySubCategory: SubCategoryDocument[] = await SubCategoryModel.find({}, { name: 1, _id: 0 }).populate(
+            {
+                path: 'itemRefs',
+                model: 'items',
+                select: {
+                    itemId: 1,
+                    _id: 0
+                },
+                perDocumentLimit: 7
+            })
+        if (!allItemsBySubCategory) {
+            throw new Error("Don't have items!")
+        }
+        let response: SubCatWithItemIdsResponse[] = allItemsBySubCategory.map(ele => {
+            return {
+                subCategory: ele.name,
+                itemIds: ele.itemRefs.map(ele => ele.itemId)
+            }
+        })
+        return response;
+    }
+
+    @Query(() => [ItemArrayElement])
+    async getAllItemsByIds(
+        @Args() { itemIds }: ItemIdsInput
+    ): Promise<Array<ItemArrayElement>> {
+        console.log('itemIds', itemIds);
+        const allItems: ItemDocument[] = await ItemModel.find({ itemId: { $in: itemIds } }, { name: 1, _id: 0, itemId: 1, images: 1, brand: 1, inventory: 1 }).populate(
+            {
+                path: 'inventory',
+                model: 'inventories',
+                select: {
+                    inventoryId: 1,
+                    price: 1,
+                    _id: 0
+                },
+                perDocumentLimit: 7
+            })
+        if (!allItems) {
+            throw new Error("Don't have items!")
+        }
+        return allItems.map(ele => {
+            return {
+                name: ele.name,
+                brand: ele.brand,
+                itemId: ele.itemId,
+                url: ele.images[0],
+                price: ele.inventory.price,
+            }
+        })
     }
 
 

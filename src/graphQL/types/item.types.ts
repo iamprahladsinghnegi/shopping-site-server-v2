@@ -10,6 +10,21 @@ export class ItemIdsResponse {
     count: number;
 }
 
+@InputType({ description: "array of string" })
+@ArgsType()
+export class ItemIdsInput {
+    @Field(() => [String])
+    itemIds: string[];
+}
+@ObjectType()
+export class SubCatWithItemIdsResponse {
+    @Field(() => String)
+    subCategory: string;
+
+    @Field(() => [String]!)
+    itemIds: string[];
+}
+
 @InputType('SpecificationsInput')
 @ObjectType('SpecificationsObject')
 export class Specifications {
@@ -46,7 +61,7 @@ export class Description {
 }
 
 @ObjectType()
-export class ItemResponse {
+export class ItemBase {
     @Field()
     itemId: string;
 
@@ -58,6 +73,17 @@ export class ItemResponse {
 
     @Field(() => String)
     brand: string;
+}
+
+@ObjectType()
+export class ItemArrayElement extends ItemBase {
+
+    @Field(() => Int)
+    price: number;
+}
+
+@ObjectType()
+export class ItemResponse extends ItemBase {
 
     @Field(() => Boolean)
     isStared: boolean;
