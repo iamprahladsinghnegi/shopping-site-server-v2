@@ -52,8 +52,8 @@ export class CartItem {
 
 @ObjectType()
 export class CartResponse {
-    @Field(() => String)
-    cartId?: string
+    @Field(() => String, { nullable: true })
+    cartId: string
 
     @Field(() => [CartItem])
     items: CartItem[];

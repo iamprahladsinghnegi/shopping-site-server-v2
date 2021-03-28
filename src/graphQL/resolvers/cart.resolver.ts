@@ -15,7 +15,7 @@ export class CartResolver {
     async getCartDetailsByCartId(
         @Arg('cartId') cartId: string
     ): Promise<CartResponse> {
-        let cartResponse: CartResponse = { items: [], count: 0 };
+        let cartResponse: CartResponse = { items: [], count: 0, cartId: '' };
         const cartDetails: CartDocument = await CartModel.findOne({ cartId }, { "items.itemId": 1, "items.quantity": 1, "items.size": 1 }).populate(
             {
                 path: 'items.item',
@@ -68,15 +68,16 @@ export class CartResolver {
     async getCartDetails(
         @Ctx() context: Context,
     ): Promise<CartResponse> {
+        let cartResponse: CartResponse = { items: [], count: 0, cartId: '' };
         const authorization = context.req.headers['authorization'];
         if (!authorization) {
-            throw new Error(`Unbale to add to cart!`);
+            return cartResponse;
+            // throw new Error(`Unbale to add to cart!`);
         }
         try {
             const token = authorization.split(' ')[1];
             const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!);
 
-            let cartResponse: CartResponse = { items: [], count: 0 };
             const userDetails: UserDocument = await UserModel.findOne({ userId: payload.userId }, { "cart": 1 }).populate(
                 {
                     path: 'cart',
@@ -112,7 +113,8 @@ export class CartResolver {
         }
         catch (e) {
             console.log(e);
-            throw new Error('Unable to cart details!');
+            return cartResponse;
+            // throw new Error('Unable to cart details!');
         }
     }
 
