@@ -391,6 +391,9 @@ export class ItemResolver {
                 break;
         }
         const items = await ItemModel.aggregate(pipeline);
+        if (items.length === 0) {
+            throw new Error('Item Not Found!')
+        }
         items.forEach((element: ItemDocument) => {
             response.itemIds.push(element.itemId);
         });
