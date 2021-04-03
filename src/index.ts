@@ -25,7 +25,7 @@ const db: string = `mongodb+srv://iamprahlad:${process.env.DB_PASSWORD}@shopping
     const app: Application = express();
     app.use(cors({
         credentials: true,
-        origin: "http://localhost:3000"
+        origin: process.env.CLIENT_APP || "http://localhost:3000"
     }))
     app.use(cookieParser());
 
@@ -79,7 +79,7 @@ const db: string = `mongodb+srv://iamprahlad:${process.env.DB_PASSWORD}@shopping
             })
             apolloServer.applyMiddleware({ app, cors: false });
             app.listen(process.env.PORT || PORT, () =>
-                console.log(`Application started successfully on PORT : ${process.env.PORT || PORT}.`)
+                console.log(`Application started successfully on PORT : ${process.env.PORT || PORT}. and Client app at ${process.env.CLIENT_APP || "http://localhost:3000"}`)
             );
             return console.info(`Successfully connected to ${db}`);
         }).catch(error => {
