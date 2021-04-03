@@ -28,6 +28,11 @@ const db: string = `mongodb+srv://iamprahlad:${process.env.DB_PASSWORD}@shopping
         origin: "http://localhost:3000"
     }))
     app.use(cookieParser());
+
+    app.get('/', (_req, res) => {
+        return res.send('<h1>Thanks for request!</h1>');
+    })
+
     app.post('/refresh_token', async (req, res) => {
         const token = req.cookies.abcid
         if (!token) {
@@ -74,7 +79,7 @@ const db: string = `mongodb+srv://iamprahlad:${process.env.DB_PASSWORD}@shopping
             })
             apolloServer.applyMiddleware({ app, cors: false });
             app.listen(process.env.PORT || PORT, () =>
-                console.log(`Application started successfully on PORT : ${PORT}.`)
+                console.log(`Application started successfully on PORT : ${process.env.PORT || PORT}.`)
             );
             return console.info(`Successfully connected to ${db}`);
         }).catch(error => {
