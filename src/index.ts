@@ -15,11 +15,11 @@ import { ItemResolver } from "./graphQL/resolvers/item.resolver";
 import { InventoryResolver } from "./graphQL/resolvers/inventory.resolver";
 import { CartResolver } from "./graphQL/resolvers/cart.resolver";
 import { OfferResolver } from "./graphQL/resolvers/offers.resolver";
-import DB_CONFIG from '../dbconfig.json';
+// import DB_CONFIG from '../dbconfig.json';
 // import * as path from "path";
 
 const PORT: number = 5555;
-const db: string = `mongodb://${DB_CONFIG.url}:${DB_CONFIG.port}/shopping`;
+const db: string = `mongodb+srv://iamprahlad:${process.env.DB_PASSWORD}@shopping-site.msc7a.mongodb.net/shopping?retryWrites=true&w=majority`; //`mongodb://${DB_CONFIG.url}:${DB_CONFIG.port}/shopping`;
 
 (async () => {
     const app: Application = express();
