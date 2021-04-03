@@ -15,12 +15,11 @@ import { ItemResolver } from "./graphQL/resolvers/item.resolver";
 import { InventoryResolver } from "./graphQL/resolvers/inventory.resolver";
 import { CartResolver } from "./graphQL/resolvers/cart.resolver";
 import { OfferResolver } from "./graphQL/resolvers/offers.resolver";
+import DB_CONFIG from '../dbconfig.json';
 // import * as path from "path";
 
-//refer to error handling
-// https://blog.logrocket.com/handling-graphql-errors-like-a-champ-with-unions-and-interfaces/
 const PORT: number = 5555;
-const db: string = "mongodb://127.0.0.1:27017/shopping";
+const db: string = `mongodb://${DB_CONFIG.url}:${DB_CONFIG.port}/shopping`;
 
 (async () => {
     const app: Application = express();
@@ -74,7 +73,7 @@ const db: string = "mongodb://127.0.0.1:27017/shopping";
                 context: ({ req, res }) => ({ req, res })
             })
             apolloServer.applyMiddleware({ app, cors: false });
-            app.listen(PORT, () =>
+            app.listen(process.env.PORT || PORT, () =>
                 console.log(`Application started successfully on PORT : ${PORT}.`)
             );
             return console.info(`Successfully connected to ${db}`);
