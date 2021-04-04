@@ -6,6 +6,7 @@ export const sendRefreshToken = (res: Response, token: string) => {
         {
             httpOnly: true,
             sameSite: 'none',
+            secure: true,
             path: '/refresh_token'
         }
     )
