@@ -4,7 +4,8 @@ export const sendRefreshToken = (res: Response, token: string) => {
     res.cookie('abcid',
         token,
         {
-            httpOnly: false,
+            httpOnly: true,
+            sameSite: 'none',
             path: '/refresh_token'
         }
     )
